@@ -23,12 +23,94 @@
 		}
 	}
 
+var prevPosition = null;
+var calculatedSpeed = null;
+var calculatedHeading = null;
+
+function getSpeed() {
+	return calculatedSpeed;
+}
+
+function getHeading() {
+	return calculatedHeading;
+}
+
+function calcDistanceFrom(lat1, lon1, lat2, lon2) {
+	var R = 6371; // km
+	var dLat = toRad(lat2-lat1);
+	var dLon = toRad(lon2-lon1);
+	lat1 = toRad(lat1);
+	lat2 = toRad(lat2);
+	
+	var a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+		Math.sin(dLon/2) * Math.sin(dLon/2) * Math.cos(lat1) * Math.cos(lat2);
+	var c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a)); 
+	var d = R * c;
+	return d;
+}
+
+function toRad(v) {
+	return v * (Math.PI / 180);
+}
+
+function toDeg(v) {
+	return v / (Math.PI / 180);
+}
+
+/*
+ * Calculate bearing from point1 to point2
+ * 
+ * Input in Radian decimal -format
+ * 
+ * source: http://www.movable-type.co.uk/scripts/latlong.html
+ */
+ function BearingBetweenCoordinates(lat1, lon1, lat2, lon2 ) {
+	//debug_log("BearingBetweenCoordinates - " + lat1+" "+lon1+" "+lat2+" "+lon2);
+
+	var y = Math.sin(lon2-lon1) * Math.cos(lat2);
+	var x = Math.cos(lat1)*Math.sin(lat2) - Math.sin(lat1)*Math.cos(lat2)*Math.cos(lon2-lon1);
+	var brng = toDeg(Math.atan2(y, x));
+	
+	// Result is between -180 ... + 180. To change to 0 ... 360 use "(brng+360)%360"
+	brng = (brng+360)%360;
+	
+	//debug_log("BearingBetweenCoordinates ---> " + brng);
+	return brng;
+}
+
+
+
+function calcSpeedAndHEading(position) {
+	console.log("calcSpeedAndHEading");
+	if (prevPosition != null) {
+		console.log("actual calculation");
+		// Calculate direction
+		calculatedHeading = BearingBetweenCoordinates(
+			prevPosition.coords.latitude, prevPosition.coords.longitude,
+			position.coords.latitude, position.coords.longitude);
+
+		// Calculate speed
+		var timeDelta_ms =  position.timestamp - prevPosition.timestamp;
+
+		var distance = calcDistanceFrom(
+			prevPosition.coords.latitude, prevPosition.coords.longitude,
+			position.coords.latitude, position.coords.longitude);
+		calculatedSpeed = distance * 1000 / timeDelta_ms; // -> m/s
+	}
+	prevPosition = position;
+}
+
 	function showPosition(position) {
 		updateCounter++;
+
+		calcSpeedAndHEading(position);
 		x.innerHTML = "Latitude: " + position.coords.latitude + 
 			"<br>Longitude: " + position.coords.longitude +
 			"<br>speed: " + position.coords.speed + " m/s" + 
 			"<br>heading: " + position.coords.heading + " degrees" +
+			"<br>accuracy: " + position.coords.accuracy + " m" +
+			"<br><br>own speed: " + getSpeed() + " m/s" + 
+			"<br>own heading: " + getHeading() + " degrees" +
 			"<br>updates: " + updateCounter;
 	}
 
