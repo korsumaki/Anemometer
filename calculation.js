@@ -149,9 +149,7 @@ function BearingBetweenCoordinates(lat1, lon1, lat2, lon2 ) {
 
 
 function calcSpeedAndHEading(position) {
-	console.log("calcSpeedAndHEading");
 	if (prevPosition != null) {
-		console.log("actual calculation");
 		// Calculate direction
 		calculatedHeading = BearingBetweenCoordinates(
 			prevPosition.coords.latitude, prevPosition.coords.longitude,
@@ -178,13 +176,13 @@ function showPosition(position) {
 	calcSpeedAndHEading(position);
 	x.innerHTML = //"Latitude: " + position.coords.latitude + 
 		//"<br>Longitude: " + position.coords.longitude +
-		"<br>speed: " + position.coords.speed + " m/s" + 
-		"<br>heading: " + position.coords.heading + " degrees" +
+		//"<br>speed: " + position.coords.speed + " m/s" + 
+		//"<br>heading: " + position.coords.heading + " degrees" +
+		"speed: " + getSpeed() + " m/s" + 
+		"<br>heading: " + getHeading() + " degrees" +
 		"<br>accuracy: " + position.coords.accuracy + " m" +
-		"<br><br>own speed: " + getSpeed() + " m/s" + 
-		"<br>own heading: " + getHeading() + " degrees" +
 		"<br>updates: " + updateCounter +
-		"<br>vectors: " + vectors.length;
+		", vectors: " + vectors.length;
 	drawVectors();
 }
 
