@@ -180,13 +180,14 @@ function addSpeedAndHeading(position) {
 function showPosition(position) {
 	updateCounter++;
 
-	var str = " (from gps)";
+	var str = "speed=" + position.coords.speed + ", heading=" + position.coords.heading;
 	if (position.coords.speed != null && position.coords.heading != null) {
 		addSpeedAndHeading(position);
+		str += "<br>(from gps)";
 	}
 	else {
 		calcSpeedAndHeading(position);
-		str = "<br>(calculated from coordinates)";
+		str += "<br>(calculated from coordinates)";
 	}
 	textElement.innerHTML = "Speed: " + getSpeed() + " m/s" + 
 		"<br>Heading: " + getHeading() + " degrees" + str +
