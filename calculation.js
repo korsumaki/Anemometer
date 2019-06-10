@@ -163,7 +163,7 @@ function calcSpeedAndHEading(position) {
 		var distance = calcDistanceFrom(
 			prevPosition.coords.latitude, prevPosition.coords.longitude,
 			position.coords.latitude, position.coords.longitude);
-		calculatedSpeed = distance / timeDelta_ms; // -> km/ms == m/s
+		calculatedSpeed = distance*1000*1000 / timeDelta_ms; // -> km/ms == m/s
 
 		if (calculatedSpeed > 0.01) {
 			vectors.push(new SpeedVector(calculatedSpeed, calculatedHeading));
@@ -176,8 +176,8 @@ function showPosition(position) {
 	updateCounter++;
 
 	calcSpeedAndHEading(position);
-	x.innerHTML = "Latitude: " + position.coords.latitude + 
-		"<br>Longitude: " + position.coords.longitude +
+	x.innerHTML = //"Latitude: " + position.coords.latitude + 
+		//"<br>Longitude: " + position.coords.longitude +
 		"<br>speed: " + position.coords.speed + " m/s" + 
 		"<br>heading: " + position.coords.heading + " degrees" +
 		"<br>accuracy: " + position.coords.accuracy + " m" +
