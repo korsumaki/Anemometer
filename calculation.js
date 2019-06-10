@@ -1,6 +1,6 @@
 // calculation.js
 
-var x = null;
+var textElement = null;
 var updateCounter = 0;
 
 var prevPosition = null;
@@ -11,21 +11,16 @@ var vectors = null;
 
 
 function getLocation() {
-	x = document.getElementById("demo");
+	textElement = document.getElementById("textElement");
 
 	updateCounter = 0;
 	vectors = new Array();
 
-	//vectors.push(new SpeedVector(15, 45));
-	//vectors.push(new SpeedVector(8, 180));
-	//vectors.push(new SpeedVector(19, 200));
-	//vectors.push(new SpeedVector(3, 300));
-
 	if (navigator.geolocation) {
-		navigator.geolocation.watchPosition(showPosition, showError);
-		x.innerHTML = "Searching location";
+		navigator.geolocation.watchPosition(showPosition, showError, { enableHighAccuracy: true} );
+		textElement.innerHTML = "Searching location";
 	} else { 
-		x.innerHTML = "Geolocation is not supported by this browser.";
+		textElement.innerHTML = "Geolocation is not supported by this browser.";
 	}
 }
 
@@ -148,7 +143,7 @@ function BearingBetweenCoordinates(lat1, lon1, lat2, lon2 ) {
 
 
 
-function calcSpeedAndHEading(position) {
+function calcSpeedAndHeading(position) {
 	if (prevPosition != null) {
 		// Calculate direction
 		calculatedHeading = BearingBetweenCoordinates(
@@ -170,16 +165,31 @@ function calcSpeedAndHEading(position) {
 	prevPosition = position;
 }
 
+function addSpeedAndHeading(position) {
+	calculatedHeading = position.coords.heading;
+	calculatedSpeed = position.coords.speed;
+
+	if (calculatedSpeed > 0.1) {
+		vectors.push(new SpeedVector(calculatedSpeed, calculatedHeading));
+	}
+
+	prevPosition = position;
+}
+
+
 function showPosition(position) {
 	updateCounter++;
 
-	calcSpeedAndHEading(position);
-	x.innerHTML = //"Latitude: " + position.coords.latitude + 
-		//"<br>Longitude: " + position.coords.longitude +
-		"<br>speed: " + position.coords.speed + " m/s" + 
-		"<br>heading: " + position.coords.heading + " degrees" +
-		"<br>calculated speed: " + getSpeed() + " m/s" + 
-		"<br>calculated heading: " + getHeading() + " degrees" +
+	var str = " (from gps)";
+	if (position.coords.speed != null && position.coords.heading != null) {
+		addSpeedAndHeading(position);
+	}
+	else {
+		calcSpeedAndHeading(position);
+		str = "<br>(calculated from coordinates)";
+	}
+	textElement.innerHTML = "Speed: " + getSpeed() + " m/s" + 
+		"<br>Heading: " + getHeading() + " degrees" + str +
 		"<br>accuracy: " + position.coords.accuracy + " m" +
 		"<br>updates: " + updateCounter +
 		", vectors: " + vectors.length;
@@ -189,16 +199,16 @@ function showPosition(position) {
 function showError(error) {
 	switch(error.code) {
 		case error.PERMISSION_DENIED:
-			x.innerHTML = "User denied the request for Geolocation."
+			textElement.innerHTML = "User denied the request for Geolocation."
 			break;
 		case error.POSITION_UNAVAILABLE:
-			x.innerHTML = "Location information is unavailable."
+			textElement.innerHTML = "Location information is unavailable."
 			break;
 		case error.TIMEOUT:
-			x.innerHTML = "The request to get user location timed out."
+			textElement.innerHTML = "The request to get user location timed out."
 			break;
 		case error.UNKNOWN_ERROR:
-			x.innerHTML = "An unknown error occurred."
+			textElement.innerHTML = "An unknown error occurred."
 			break;
 	}
 }
