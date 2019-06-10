@@ -161,9 +161,9 @@ function calcSpeedAndHEading(position) {
 		var distance = calcDistanceFrom(
 			prevPosition.coords.latitude, prevPosition.coords.longitude,
 			position.coords.latitude, position.coords.longitude);
-		calculatedSpeed = distance*1000*1000 / timeDelta_ms; // -> km/ms == m/s
+		calculatedSpeed = distance*1000.0 / (timeDelta_ms/1000.0); // -> km/ms == m/s
 
-		if (calculatedSpeed > 0.01) {
+		if (calculatedSpeed > 0.1) {
 			vectors.push(new SpeedVector(calculatedSpeed, calculatedHeading));
 		}
 	}
@@ -176,10 +176,10 @@ function showPosition(position) {
 	calcSpeedAndHEading(position);
 	x.innerHTML = //"Latitude: " + position.coords.latitude + 
 		//"<br>Longitude: " + position.coords.longitude +
-		//"<br>speed: " + position.coords.speed + " m/s" + 
-		//"<br>heading: " + position.coords.heading + " degrees" +
-		"speed: " + getSpeed() + " m/s" + 
-		"<br>heading: " + getHeading() + " degrees" +
+		"<br>speed: " + position.coords.speed + " m/s" + 
+		"<br>heading: " + position.coords.heading + " degrees" +
+		"<br>calculated speed: " + getSpeed() + " m/s" + 
+		"<br>calculated heading: " + getHeading() + " degrees" +
 		"<br>accuracy: " + position.coords.accuracy + " m" +
 		"<br>updates: " + updateCounter +
 		", vectors: " + vectors.length;
