@@ -144,7 +144,7 @@ function BearingBetweenCoordinates(lat1, lon1, lat2, lon2 ) {
 
 
 function calcSpeedAndHeading(position) {
-	if (prevPosition != null) {
+	if (prevPosition != null && position.timestamp != null && prevPosition.timestamp != null ) {
 		// Calculate direction
 		calculatedHeading = BearingBetweenCoordinates(
 			prevPosition.coords.latitude, prevPosition.coords.longitude,
@@ -152,14 +152,15 @@ function calcSpeedAndHeading(position) {
 
 		// Calculate speed
 		var timeDelta_ms =  position.timestamp - prevPosition.timestamp;
-
-		var distance = calcDistanceFrom(
-			prevPosition.coords.latitude, prevPosition.coords.longitude,
-			position.coords.latitude, position.coords.longitude);
-		calculatedSpeed = distance*1000.0 / (timeDelta_ms/1000.0); // -> km/ms == m/s
-
-		if (calculatedSpeed > 0.1) {
-			vectors.push(new SpeedVector(calculatedSpeed, calculatedHeading));
+		if (timeDelta_ms > 0) {
+			var distance = calcDistanceFrom(
+				prevPosition.coords.latitude, prevPosition.coords.longitude,
+				position.coords.latitude, position.coords.longitude);
+			calculatedSpeed = distance*1000.0 / (timeDelta_ms/1000.0); // -> km/ms == m/s
+	
+			if (calculatedSpeed > 0.1) {
+				vectors.push(new SpeedVector(calculatedSpeed, calculatedHeading));
+			}
 		}
 	}
 	prevPosition = position;
@@ -180,7 +181,7 @@ function addSpeedAndHeading(position) {
 function showPosition(position) {
 	updateCounter++;
 
-	var str = "speed=" + position.coords.speed + ", heading=" + position.coords.heading;
+	var str = "";
 	if (position.coords.speed != null && position.coords.heading != null) {
 		addSpeedAndHeading(position);
 		str += "<br>(from gps)";
