@@ -17,7 +17,7 @@ function getLocation() {
 	vectors = new Array();
 
 	if (navigator.geolocation) {
-		navigator.geolocation.watchPosition(showPosition, showError, { enableHighAccuracy: true} );
+		navigator.geolocation.watchPosition(showPosition, showError ); // , { enableHighAccuracy: true}
 		textElement.innerHTML = "Searching location";
 	} else { 
 		textElement.innerHTML = "Geolocation is not supported by this browser.";
