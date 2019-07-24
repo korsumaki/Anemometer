@@ -4,8 +4,8 @@ var textElement = null;
 var updateCounter = 0;
 
 var prevPosition = null;
-var calculatedSpeed = null;
-var calculatedHeading = null;
+var calculatedSpeed = 0;
+var calculatedHeading = 0;
 var vectors = null;
 
 
@@ -39,16 +39,22 @@ class SpeedVector {
 }
 
 
-function drawLine(ctx, x1, y1, x2, y2) {
+function drawLine(ctx, x1, y1, x2, y2, color) {
+	ctx.beginPath();
 	ctx.moveTo(x1,y1);
 	ctx.lineTo(x2,y2);
-	ctx.strokeStyle = 'black';
+	ctx.lineWidth = 3;
+	ctx.strokeStyle = color;
+	ctx.closePath();
 	ctx.stroke();
 }
 
 function drawCircle(ctx, x, y, radius) {
 	ctx.beginPath();
+	ctx.lineWidth = 1;
+	ctx.strokeStyle = 'black';
 	ctx.arc(x, y, radius, 0, 2 * Math.PI);
+	ctx.closePath();
 	ctx.stroke();
 }
 
@@ -90,10 +96,15 @@ function drawVectors() {
 		var x = Math.sin(direction) * scaledDistance;
 		var y = Math.cos(direction) * scaledDistance;
 
+		var color = 'black';
+		if (i == vectors.length-1) {
+			color = 'red';
+		}
 		drawLine(ctx, 
 			centerX, centerY, 
 			centerX + x,
-			centerY - y );
+			centerY - y,
+			color );
 	}
 	drawCircle(ctx, centerX, centerY, highest * scaleFactor);
 	drawCircle(ctx, centerX, centerY, lowest * scaleFactor);
