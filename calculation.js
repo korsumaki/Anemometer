@@ -1,40 +1,112 @@
 // calculation.js
 
+/*
+ * TODO
+ * + TDD unit testeillä
+ * + taulukointi esim. 5 tai 10 asteen välein
+ * - UI piirto uuden taulukon kanssa
+ *   - oikeat arvot mustalla
+ *   - interpoloidut arvot harmaalla
+ *   - viimeisin arvo vihreällä
+ */
+
+
 var textElement = null;
 var updateCounter = 0;
 
 var prevPosition = null;
 var calculatedSpeed = 0;
 var calculatedHeading = 0;
-var vectors = null;
+var headingVectors = null;
 
+var headingSteps = 10;
+var headingSlots = 360/headingSteps;
+
+function clearData()
+{
+	updateCounter = 0;
+	headingVectors = new Array( headingSlots ).fill(0);
+}
+
+function findNextSlot(startIndex, direction, limitCount)
+{
+	if (limitCount == 0) // Stop recursion
+	{
+		return startIndex;
+	}
+
+	var index = startIndex + direction;
+	if (index < 0)
+	{
+		index += headingSlots;
+	}
+	if (index >= headingSlots)
+	{
+		index -= headingSlots;
+	}
+
+	if (headingVectors[index] > 0)
+	{
+		return index;
+	}
+	else
+	{
+		return findNextSlot(index, direction, limitCount-1);
+	}
+}
+
+function lerp(v0, v1, t) {
+	return (1 - t) * v0 + t * v1;
+}
+
+function getSpeedForHeadingNoInterpolation(heading)
+{
+	var index = Math.round(heading/headingSteps);
+	var speed = headingVectors[index];
+	return speed;
+}
+
+function getSpeedForHeading(heading)
+{
+	var index = Math.round(heading/headingSteps);
+	var speed = headingVectors[index];
+	if (speed == 0)
+	{
+		var nextSlot = findNextSlot(index, 1, headingSlots);
+		var prevSlot = findNextSlot(index, -1, headingSlots);
+
+		if (prevSlot == nextSlot) {
+			return headingVectors[prevSlot];	// Both directions found the same slot
+		}
+
+		// make sure all indexes are in the same round
+		var p = prevSlot;
+		var n = nextSlot;
+		if (p > index) p -= headingSlots;
+		if (n < index) n += headingSlots;
+
+		var f = (index-p) / (n-p);
+		return lerp(headingVectors[prevSlot], headingVectors[nextSlot], f);
+	}
+	return speed;
+}
 
 
 function getLocation() {
 	textElement = document.getElementById("textElement");
 
-	updateCounter = 0;
-	vectors = new Array();
+	clearData();
+
+	// Test data
+	//addSpeedAndHeading(5, 120);
+	//addSpeedAndHeading(9, 195);
+	//addSpeedAndHeading(7, 30);
 
 	if (navigator.geolocation) {
 		navigator.geolocation.watchPosition(showPosition, showError ); // , { enableHighAccuracy: true}
 		textElement.innerHTML = "Searching location";
 	} else { 
 		textElement.innerHTML = "Geolocation is not supported by this browser.";
-	}
-}
-
-
-class SpeedVector {
-	constructor(speed, direction) {
-		this._speed = speed;
-		this._direction = direction;
-	}
-	getSpeed() {
-		return this._speed;
-	}
-	getDirection() {
-		return this._direction;
 	}
 }
 
@@ -67,6 +139,22 @@ function toDeg(v) {
 	return v / (Math.PI / 180);
 }
 
+function maxValue(arr) {
+	return arr.reduce( function(total, value) { return Math.max(total, value) } )
+}
+
+function minValue(arr) {
+	return arr.reduce( function(total, value) 
+	{
+		if (value >0) {
+			return Math.min(total, value);
+		}
+		else {
+			return total;
+		}
+	}, 9999 )
+}
+
 function drawVectors() {
 	var c = document.getElementById("mapCanvas");
 	var ctx = c.getContext("2d");
@@ -79,27 +167,29 @@ function drawVectors() {
 
 
 	// Find highest and lowest speed vectors -> draw circles for those
-	var highest = 0;
-	var lowest = 9999;
-	for (var i=0; i<vectors.length; ++i) {
-		highest = Math.max(highest, vectors[i].getSpeed() );
-		lowest = Math.min(lowest, vectors[i].getSpeed() );
-	}
+	var highest = maxValue(headingVectors);
+	var lowest = minValue(headingVectors);
 
 	// Calculate scale factor to fill screen nicely
 	var scaleFactor = centerX/(highest*1.1); // 10% marginal
 
-	for (var i=0; i<vectors.length; ++i) {
-		var scaledDistance = vectors[i].getSpeed()*scaleFactor
-		var direction = toRad( vectors[i].getDirection() );
+	for (var heading=0; heading<360; heading += 10) {
+		var color = 'blue';
+		speed = getSpeedForHeadingNoInterpolation(heading);
 
+		if (speed == 0) { // We should use interpolation
+			color = 'gray';	// Interpolated values with different color
+			speed = getSpeedForHeading(heading);
+		}
+		if ((heading/10) == Math.round(getHeading()/10)) { // Latest heading with different color
+			color = 'red';
+		}
+		var scaledDistance = speed*scaleFactor
+
+		var direction = toRad(heading);
 		var x = Math.sin(direction) * scaledDistance;
 		var y = Math.cos(direction) * scaledDistance;
 
-		var color = 'black';
-		if (i == vectors.length-1) {
-			color = 'red';
-		}
 		drawLine(ctx, 
 			centerX, centerY, 
 			centerX + x,
@@ -169,32 +259,40 @@ function calcSpeedAndHeading(position) {
 				position.coords.latitude, position.coords.longitude);
 			calculatedSpeed = distance*1000.0 / (timeDelta_ms/1000.0); // -> km/ms == m/s
 	
-			if (calculatedSpeed > 0.1) {
-				vectors.push(new SpeedVector(calculatedSpeed, calculatedHeading));
-			}
+			addSpeedAndHeading(calculatedSpeed, calculatedHeading);
 		}
 	}
 	prevPosition = position;
 }
 
-function addSpeedAndHeading(position) {
-	calculatedHeading = position.coords.heading;
-	calculatedSpeed = position.coords.speed;
+var speedIirFilterValue = 25; // TODO move to up
+
+function addSpeedAndHeading(speed, heading) {
+	calculatedHeading = heading;
+	calculatedSpeed = speed;
 
 	if (calculatedSpeed > 0.1) {
-		vectors.push(new SpeedVector(calculatedSpeed, calculatedHeading));
+		var index = Math.round(calculatedHeading/headingSteps);
+
+		var oldSpeed = headingVectors[index];
+		var iirFilterSpeed = calculatedSpeed;
+
+		if (oldSpeed > 0) // Filter only if there is previous value. Zero means that this value is not yet got.
+		{
+			iirFilterSpeed = ((oldSpeed * (100-speedIirFilterValue)) + (calculatedSpeed * speedIirFilterValue)) /100;
+		}
+
+		headingVectors[index] = iirFilterSpeed;
 	}
-
-	prevPosition = position;
 }
-
 
 function showPosition(position) {
 	updateCounter++;
 
 	var str = "";
 	if (position.coords.speed != null && position.coords.heading != null) {
-		addSpeedAndHeading(position);
+		addSpeedAndHeading(position.coords.speed, position.coords.heading);
+		prevPosition = position;
 		str += "<br>(from gps)";
 	}
 	else {
@@ -204,8 +302,7 @@ function showPosition(position) {
 	textElement.innerHTML = "Speed: " + getSpeed() + " m/s" + 
 		"<br>Heading: " + getHeading() + " degrees" + str +
 		"<br>accuracy: " + position.coords.accuracy + " m" +
-		"<br>updates: " + updateCounter +
-		", vectors: " + vectors.length;
+		"<br>updates: " + updateCounter;
 	drawVectors();
 }
 
