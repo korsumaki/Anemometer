@@ -2,12 +2,14 @@
 
 /*
  * TODO
- * + TDD unit testeillä
- * + taulukointi esim. 5 tai 10 asteen välein
- * - UI piirto uuden taulukon kanssa
- *   - oikeat arvot mustalla
- *   - interpoloidut arvot harmaalla
- *   - viimeisin arvo vihreällä
+ * + suurin ja pienin nopeus numeroilla
+ * - sovita ympyrä dataan
+ *   - halkaisija on (max+min)/2
+ *   - vajaalla datalla halkaisija voi olla jotain muutakin. Voiko sen laskea?
+ * - tuulen arvioitu suunta ja nopeus numeroilla
+ * - tuulen arvioitu suunta ja nopeus nuolena kuvaan
+ * - voiko laskea virhemarginaalia?
+ * 
  */
 
 
@@ -247,7 +249,7 @@ function BearingBetweenCoordinates(lat1, lon1, lat2, lon2 ) {
 function calcSpeedAndHeading(position) {
 	if (prevPosition != null && position.timestamp != null && prevPosition.timestamp != null ) {
 		// Calculate direction
-		calculatedHeading = BearingBetweenCoordinates(
+		heading = BearingBetweenCoordinates(
 			prevPosition.coords.latitude, prevPosition.coords.longitude,
 			position.coords.latitude, position.coords.longitude);
 
@@ -257,9 +259,9 @@ function calcSpeedAndHeading(position) {
 			var distance = calcDistanceFrom(
 				prevPosition.coords.latitude, prevPosition.coords.longitude,
 				position.coords.latitude, position.coords.longitude);
-			calculatedSpeed = distance*1000.0 / (timeDelta_ms/1000.0); // -> km/ms == m/s
+			speed = distance*1000.0 / (timeDelta_ms/1000.0); // -> km/ms == m/s
 	
-			addSpeedAndHeading(calculatedSpeed, calculatedHeading);
+			addSpeedAndHeading(speed, heading);
 		}
 	}
 	prevPosition = position;
@@ -268,10 +270,10 @@ function calcSpeedAndHeading(position) {
 var speedIirFilterValue = 25; // TODO move to up
 
 function addSpeedAndHeading(speed, heading) {
-	calculatedHeading = heading;
-	calculatedSpeed = speed;
+	if (speed > 0.1) {
+		calculatedHeading = heading;
+		calculatedSpeed = speed;
 
-	if (calculatedSpeed > 0.1) {
 		var index = Math.round(calculatedHeading/headingSteps);
 
 		var oldSpeed = headingVectors[index];
@@ -299,7 +301,9 @@ function showPosition(position) {
 		calcSpeedAndHeading(position);
 		str += "<br>(calculated from coordinates)";
 	}
-	textElement.innerHTML = "Speed: " + getSpeed() + " m/s" + 
+	textElement.innerHTML = "Max speed: " + maxValue(headingVectors) + " m/s" + 
+		"<br>Min speed: " + minValue(headingVectors) + " m/s" + 
+		"<br>Latest speed: " + getSpeed() + " m/s" + 
 		"<br>Heading: " + getHeading() + " degrees" + str +
 		"<br>accuracy: " + position.coords.accuracy + " m" +
 		"<br>updates: " + updateCounter;
