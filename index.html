@@ -1,17 +1,29 @@
 <!DOCTYPE html>
 <html>
-<script src="calculation.js"></script>
-<body>
+	<head>
+		<title>Anemometer</title>
+		<meta name="viewport" content="width=device-width, initial-scale=1">
+		<link rel="stylesheet" href="http://code.jquery.com/mobile/1.4.5/jquery.mobile-1.4.5.min.css" />
+		<script src="http://code.jquery.com/jquery-1.11.1.min.js"></script>
+		<script src="http://code.jquery.com/mobile/1.4.5/jquery.mobile-1.4.5.min.js"></script>
+		<script src="calculation.js"></script>
+	</head>
+<body onload="getLocation()">
+	<div data-role="page">
+		<!-- div data-role="header">...</div -->
+		<div role="main" class="ui-content">
+			<h1>Anemometer</h1>
+			<p>Fly a circle with constant airspeed</p>
 
-<h1>Anemometer</h1>
-<p>Fly a circle with constant airspeed</p>
-
-<canvas id="mapCanvas" width="400" height="400" style="border:1px solid #000000;">Canvas not supported</canvas>
-<p>
-<button onclick="getLocation()">Clear and Start again</button>
-</p>
-
-<p id="textElement"></p>
-
+			<button onclick="getLocation()">Clear and Start again</button>
+			</p>
+			
+			<canvas id="mapCanvas" width="400" height="400" style="border:1px solid #000000;">Canvas not supported</canvas>
+			<p>
+			
+			<p id="textElement"></p>
+		</div>
+		<!-- div data-role="footer">...</div -->
+	</div>
 </body>
 </html>
