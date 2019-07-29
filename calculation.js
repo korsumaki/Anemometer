@@ -3,13 +3,19 @@
 /*
  * TODO
  * + suurin ja pienin nopeus numeroilla
- * - sovita ympyrä dataan
+ * - laske nopeusvektoreiden summavektori
+ *   - samalla piirtofunktiossa?
+ * - moderni ui, skaalaa canvas ruudun levyiseksi?
+ * /- sovita ympyrä dataan
  *   - halkaisija on (max+min)/2
  *   - vajaalla datalla halkaisija voi olla jotain muutakin. Voiko sen laskea?
+ *     - keskiarvo nopeusvektoreiden pituuksista? Se pienentäisi yksittäiset suuren tai pienen nopeden aiheuttamaa virhettä
+ * - muodosta testidataa
  * - tuulen arvioitu suunta ja nopeus numeroilla
  * - tuulen arvioitu suunta ja nopeus nuolena kuvaan
  * - voiko laskea virhemarginaalia?
- * 
+ *   - gps:n accuracy
+ *   - nopeuksien vaihtelut
  */
 
 
@@ -100,9 +106,9 @@ function getLocation() {
 	clearData();
 
 	// Test data
-	//addSpeedAndHeading(5, 120);
+	//addSpeedAndHeading(5, 30);
 	//addSpeedAndHeading(9, 195);
-	//addSpeedAndHeading(7, 30);
+	//addSpeedAndHeading(7, 120);
 
 	if (navigator.geolocation) {
 		navigator.geolocation.watchPosition(showPosition, showError ); // , { enableHighAccuracy: true}
@@ -180,7 +186,7 @@ function drawVectors() {
 		speed = getSpeedForHeadingNoInterpolation(heading);
 
 		if (speed == 0) { // We should use interpolation
-			color = 'gray';	// Interpolated values with different color
+			color = 'lightgray';	// Interpolated values with different color
 			speed = getSpeedForHeading(heading);
 		}
 		if ((heading/10) == Math.round(getHeading()/10)) { // Latest heading with different color
@@ -200,6 +206,39 @@ function drawVectors() {
 	}
 	drawCircle(ctx, centerX, centerY, highest * scaleFactor);
 	drawCircle(ctx, centerX, centerY, lowest * scaleFactor);
+}
+
+
+function calcWindVector() {
+	var c = document.getElementById("mapCanvas");
+	var ctx = c.getContext("2d");
+
+	var centerX = c.width/2;
+	var centerY = c.height/2;
+
+	// Find highest and lowest speed vectors -> draw circles for those
+	var highest = maxValue(headingVectors);
+
+	// Calculate scale factor to fill screen nicely
+	var scaleFactor = centerX/(highest*1.1); // 10% marginal
+
+	var x = 0;
+	var y = 0;
+
+	for (var heading=0; heading<360; heading += 10) {
+		speed = getSpeedForHeading(heading);
+
+		var direction = toRad(heading);
+		x = x + Math.sin(direction) * speed;
+		y = y + Math.cos(direction) * speed;
+		console.log("Heading: " + heading + " speed:" + speed + " -> (" + x + ", " + y + ")")
+	}
+	color = 'green';
+	drawLine(ctx, 
+		centerX, centerY, 
+		centerX + x* scaleFactor/36,
+		centerY - y* scaleFactor/36,
+		color );
 }
 
 
@@ -308,6 +347,7 @@ function showPosition(position) {
 		"<br>accuracy: " + position.coords.accuracy + " m" +
 		"<br>updates: " + updateCounter;
 	drawVectors();
+	calcWindVector();
 }
 
 function showError(error) {
