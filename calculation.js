@@ -3,19 +3,20 @@
 /*
  * TODO
  * + suurin ja pienin nopeus numeroilla
- * - laske nopeusvektoreiden summavektori
- *   - samalla piirtofunktiossa?
+ * + laske nopeusvektoreiden summavektori
+ *   + samalla piirtofunktiossa?
  * - moderni ui, skaalaa canvas ruudun levyiseksi?
  * /- sovita ympyrä dataan
  *   - halkaisija on (max+min)/2
  *   - vajaalla datalla halkaisija voi olla jotain muutakin. Voiko sen laskea?
  *     - keskiarvo nopeusvektoreiden pituuksista? Se pienentäisi yksittäiset suuren tai pienen nopeden aiheuttamaa virhettä
  * - muodosta testidataa
- * - tuulen arvioitu suunta ja nopeus numeroilla
- * - tuulen arvioitu suunta ja nopeus nuolena kuvaan
+ * + tuulen arvioitu suunta ja nopeus numeroilla
+ * + tuulen arvioitu suunta ja nopeus nuolena kuvaan
  * - voiko laskea virhemarginaalia?
  *   - gps:n accuracy
  *   - nopeuksien vaihtelut
+ *   - interpolointijakson pituus luo virhettä
  */
 
 
@@ -119,20 +120,20 @@ function getLocation() {
 }
 
 
-function drawLine(ctx, x1, y1, x2, y2, color) {
+function drawLine(ctx, x1, y1, x2, y2, color, lineWidth) {
 	ctx.beginPath();
 	ctx.moveTo(x1,y1);
 	ctx.lineTo(x2,y2);
-	ctx.lineWidth = 3;
+	ctx.lineWidth = lineWidth;
 	ctx.strokeStyle = color;
 	ctx.closePath();
 	ctx.stroke();
 }
 
-function drawCircle(ctx, x, y, radius) {
+function drawCircle(ctx, x, y, radius, color) {
 	ctx.beginPath();
 	ctx.lineWidth = 1;
-	ctx.strokeStyle = 'black';
+	ctx.strokeStyle = color;
 	ctx.arc(x, y, radius, 0, 2 * Math.PI);
 	ctx.closePath();
 	ctx.stroke();
@@ -181,7 +182,7 @@ function drawVectors() {
 	// Calculate scale factor to fill screen nicely
 	var scaleFactor = centerX/(highest*1.1); // 10% marginal
 
-	for (var heading=0; heading<360; heading += 10) {
+	for (var heading=0; heading<360; heading += headingSteps) {
 		var color = 'blue';
 		speed = getSpeedForHeadingNoInterpolation(heading);
 
@@ -189,7 +190,7 @@ function drawVectors() {
 			color = 'lightgray';	// Interpolated values with different color
 			speed = getSpeedForHeading(heading);
 		}
-		if ((heading/10) == Math.round(getHeading()/10)) { // Latest heading with different color
+		if ((heading/headingSteps) == Math.round(getHeading()/headingSteps)) { // Latest heading with different color
 			color = 'red';
 		}
 		var scaledDistance = speed*scaleFactor
@@ -202,10 +203,10 @@ function drawVectors() {
 			centerX, centerY, 
 			centerX + x,
 			centerY - y,
-			color );
+			color, 2);
 	}
-	drawCircle(ctx, centerX, centerY, highest * scaleFactor);
-	drawCircle(ctx, centerX, centerY, lowest * scaleFactor);
+	drawCircle(ctx, centerX, centerY, highest * scaleFactor, 'black');
+	drawCircle(ctx, centerX, centerY, lowest * scaleFactor, 'black');
 }
 
 
@@ -225,20 +226,33 @@ function calcWindVector() {
 	var x = 0;
 	var y = 0;
 
-	for (var heading=0; heading<360; heading += 10) {
+	for (var heading=0; heading<360; heading += headingSteps) {
 		speed = getSpeedForHeading(heading);
 
 		var direction = toRad(heading);
 		x = x + Math.sin(direction) * speed;
 		y = y + Math.cos(direction) * speed;
-		console.log("Heading: " + heading + " speed:" + speed + " -> (" + x + ", " + y + ")")
+		//console.log("Heading: " + heading + " speed:" + speed + " -> (" + x + ", " + y + ")");
 	}
+
+	var windSpeed = Math.sqrt(x*x + y*y) / (headingSlots/2);
+	var alpha = toDeg( Math.atan2(y, x) );
+	alpha = -alpha+90;
+	alpha = (alpha+360)%360;
+	console.log("Wind: " + windSpeed + " m/s " + alpha + " degrees");
+
 	color = 'green';
 	drawLine(ctx, 
 		centerX, centerY, 
-		centerX + x* scaleFactor/36,
-		centerY - y* scaleFactor/36,
-		color );
+		centerX + x* scaleFactor/(headingSlots/2),
+		centerY - y* scaleFactor/(headingSlots/2),
+		color, 5 );
+
+	var knots = windSpeed/1852*3600;
+	// Write also numbers to canvas
+	var text = Math.round(windSpeed*10)/10 + " m/s " + Math.round(knots*10)/10 + " kn " + Math.round(alpha) + " deg"
+	ctx.font = "20px Arial";
+	ctx.fillText(text, 3, c.height-3);
 }
 
 
