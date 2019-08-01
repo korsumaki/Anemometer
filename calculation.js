@@ -386,14 +386,14 @@ function calcWindVector() {
 	var windSpeed = Math.sqrt(x*x + y*y) / (headingSlots/2);
 	var alpha = toDeg( Math.atan2(y, x) );
 	alpha = -alpha+90;
-	alpha = (alpha+360)%360;
+	alpha = (alpha+180)%360;
 	//console.log("Wind: " + windSpeed + " m/s " + alpha + " degrees");
 
 	color = 'green';
 	drawLine(ctx, 
 		centerX, centerY, 
-		centerX + x* scaleFactor/(headingSlots/2),
-		centerY - y* scaleFactor/(headingSlots/2),
+		centerX + x* scaleFactor/(headingSlots/(2*4)),		// *4 is to get wind vector scaled up 4 times
+		centerY - y* scaleFactor/(headingSlots/(2*4)),		// *4 is to get wind vector scaled up 4 times
 		color, 5 );
 
 	var knots = windSpeed/1852*3600;
@@ -497,16 +497,27 @@ function showPosition(position) {
 	if (position.coords.speed != null && position.coords.heading != null) {
 		addSpeedAndHeading(position.coords.speed, position.coords.heading);
 		prevPosition = position;
-		str += "<br>(from gps)";
+		str += " (from gps)";
 	}
 	else {
 		calcSpeedAndHeading(position);
-		str += "<br>(calculated from coordinates)";
+		str += " (from coordinates)";
 	}
-	textElement.innerHTML = "Max speed: " + maxValue(headingVectors) + " m/s" + 
-		"<br>Min speed: " + minValue(headingVectors) + " m/s" + 
-		"<br>Latest speed: " + getSpeed() + " m/s" + 
-		"<br>Heading: " + getHeading() + " degrees" + str +
+	var maxSpeed = maxValue(headingVectors);
+	var minSpeed = minValue(headingVectors);
+	var latestSpeed = getSpeed();
+
+	textElement.innerHTML =
+		"Current speed: " + 
+			Math.round(latestSpeed*3.6) + " km/h (" + 
+			Math.round(latestSpeed*10)/10 + " m/s)" + 
+		"<br>Heading: " + Math.round(getHeading()) + " degrees" + str +
+		"<br>Max speed: " + 
+			Math.round(maxSpeed*3.6) + " km/h (" + 
+			Math.round(maxSpeed*10)/10 + " m/s)" + 
+		"<br>Min speed: " + 
+			Math.round(minSpeed*3.6) + " km/h (" + 
+			Math.round(minSpeed*10)/10 + " m/s)" + 
 		"<br>accuracy: " + position.coords.accuracy + " m" +
 		"<br>updates: " + updateCounter;
 	if (currentTime != null) {
