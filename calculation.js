@@ -6,6 +6,7 @@
  * + laske nopeusvektoreiden summavektori
  *   + samalla piirtofunktiossa?
  * - moderni ui, skaalaa canvas ruudun levyiseksi?
+ * - käännä tuulen suunta 180.
  * /- sovita ympyrä dataan
  *   - halkaisija on (max+min)/2
  *   - vajaalla datalla halkaisija voi olla jotain muutakin. Voiko sen laskea?
@@ -70,14 +71,14 @@ function lerp(v0, v1, t) {
 
 function getSpeedForHeadingNoInterpolation(heading)
 {
-	var index = Math.round(heading/headingSteps);
+	var index = Math.round(heading/headingSteps) % headingSlots;
 	var speed = headingVectors[index];
 	return speed;
 }
 
 function getSpeedForHeading(heading)
 {
-	var index = Math.round(heading/headingSteps);
+	var index = Math.round(heading/headingSteps) % headingSlots;
 	var speed = headingVectors[index];
 	if (speed == 0)
 	{
@@ -190,7 +191,7 @@ function drawVectors() {
 			color = 'lightgray';	// Interpolated values with different color
 			speed = getSpeedForHeading(heading);
 		}
-		if ((heading/headingSteps) == Math.round(getHeading()/headingSteps)) { // Latest heading with different color
+		if ((heading/headingSteps) == Math.round(getHeading()/headingSteps) % headingSlots) { // Latest heading with different color
 			color = 'red';
 		}
 		var scaledDistance = speed*scaleFactor
@@ -207,6 +208,14 @@ function drawVectors() {
 	}
 	drawCircle(ctx, centerX, centerY, highest * scaleFactor, 'black');
 	drawCircle(ctx, centerX, centerY, lowest * scaleFactor, 'black');
+}
+
+
+function addPrefixDigits(value, digitToAdd, targetLength) {
+	while (value.length < targetLength) {
+		value = digitToAdd + value;
+	}
+	return value;
 }
 
 
@@ -250,7 +259,8 @@ function calcWindVector() {
 
 	var knots = windSpeed/1852*3600;
 	// Write also numbers to canvas
-	var text = Math.round(windSpeed*10)/10 + " m/s " + Math.round(knots*10)/10 + " kn " + Math.round(alpha) + " deg"
+	var degreesStr = addPrefixDigits("" + Math.round(alpha), "0", 3);
+	var text = Math.round(windSpeed*10)/10 + " m/s " + Math.round(knots*10)/10 + " kn " + degreesStr + " deg";
 	ctx.font = "20px Arial";
 	ctx.fillText(text, 3, c.height-3);
 }
@@ -327,7 +337,7 @@ function addSpeedAndHeading(speed, heading) {
 		calculatedHeading = heading;
 		calculatedSpeed = speed;
 
-		var index = Math.round(calculatedHeading/headingSteps);
+		var index = Math.round(calculatedHeading/headingSteps) % headingSlots;
 
 		var oldSpeed = headingVectors[index];
 		var iirFilterSpeed = calculatedSpeed;
