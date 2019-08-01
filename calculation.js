@@ -11,7 +11,7 @@
  *   - halkaisija on (max+min)/2
  *   - vajaalla datalla halkaisija voi olla jotain muutakin. Voiko sen laskea?
  *     - keskiarvo nopeusvektoreiden pituuksista? Se pienentäisi yksittäiset suuren tai pienen nopeden aiheuttamaa virhettä
- * - muodosta testidataa
+ * + muodosta testidataa
  * + tuulen arvioitu suunta ja nopeus numeroilla
  * + tuulen arvioitu suunta ja nopeus nuolena kuvaan
  * - voiko laskea virhemarginaalia?
@@ -32,10 +32,149 @@ var headingVectors = null;
 var headingSteps = 10;
 var headingSlots = 360/headingSteps;
 
+var locationId;
+
+var trackPointArray; // GPS locations for test data
+
+var testDataFilename = "testData_20190731.xml"
+var log = ""
+
+function debug_log(str)
+{
+	log += str + "<br>";
+	document.getElementById("log").innerHTML=log;
+}
+
+function loadXMLDoc(filename, handler) {
+	var xhttp;
+	if (window.XMLHttpRequest)
+	{
+		xhttp=new XMLHttpRequest();
+	}
+	else // IE 5/6
+	{
+		xhttp=new ActiveXObject("Microsoft.XMLHTTP");
+		debug_log( "going IE way");
+	}
+	
+	xhttp.onreadystatechange=handler;
+	xhttp.open("GET",filename, true);
+	xhttp.send();
+}
+
+function testDataXmlResponseHandler() {
+	if (this.readyState == this.DONE || this.readyState == 4) {
+		if (this.status == 200 && this.responseXML !== null ) {
+			// success!
+			testDataXmlReadyHandler(this.responseXML);
+			return;
+		}
+		// something went wrong
+		debug_log( "ERROR: testDataXmlResponseHandler - error: status=" + this.status );
+	}
+}
+
+// This class keep one gps location
+class TrackPoint {
+	constructor(time, lat, lon) {
+		this.time = time;
+		this.lat = lat;
+		this.lon = lon;
+	}
+}
+
+function testDataXmlReadyHandler(xmlDoc) {
+	var trackpoint_list = xmlDoc.getElementsByTagName("trkpt");
+	trackPointArray = new Array();
+
+	for (var index=0; index<trackpoint_list.length; ++index) {
+		var trackPointTime = trackpoint_list[index].getElementsByTagName("time")[0].innerHTML;
+		var lat = trackpoint_list[index].attributes.getNamedItem("lat").value;
+		var lon = trackpoint_list[index].attributes.getNamedItem("lon").value;
+		trackPointArray.push(new TrackPoint(trackPointTime, lat, lon));
+	}
+	debug_log( "Loaded " + trackPointArray.length + " trackPoints.");
+}
+
+
+
+function testInit() {
+	// remove location request
+	if (navigator.geolocation) {
+		navigator.geolocation.clearWatch(locationId);
+		textElement.innerHTML = "Location watch stopped during test data.";
+	} else { 
+		textElement.innerHTML = "Geolocation is not supported by this browser.";
+	}
+
+	clearData();
+
+	// Load test data
+	loadXMLDoc(testDataFilename, testDataXmlResponseHandler);
+}
+
+// Function for converting lat, lon and time to position object
+function createPositionObject(lat, lon, time) {
+	var position = {
+		coords: {
+			latitude: null,
+			longitude: null,
+			accuracy: 999,
+			altitude: null,
+			altitudeAccuracy: null,
+			heading: null,
+			speed: null,
+		},
+		timestamp: null,
+	};
+	
+	position.coords.latitude = lat;
+	position.coords.longitude = lon;
+	position.timestamp = time;
+
+	return position;
+}
+
+var testDataIndex = 0;
+var currentTime = null;
+var simulationSpeed = 500;
+var testTimerId = null;
+
+function testStart(startTime) {
+	var time = new Date(startTime);
+	var timeMilliseconds = Date.parse(startTime);
+
+	debug_log( "Starting test at " + time.toLocaleTimeString() );
+	clearData();
+
+	// Loop to start time
+	var testDataIndex = 0;
+	while (Date.parse(trackPointArray[testDataIndex].time) < timeMilliseconds) {
+		testDataIndex++;
+	}
+
+	// start timer for test data
+	testTimerId = setInterval( function() {
+		var timestamp = Date.parse(trackPointArray[testDataIndex].time);
+		var lat = trackPointArray[testDataIndex].lat;
+		var lon = trackPointArray[testDataIndex].lon;
+		currentTime = new Date(trackPointArray[testDataIndex].time).toLocaleTimeString();
+		testDataIndex++;
+
+		showPosition( createPositionObject(lat, lon, timestamp) );
+	}, simulationSpeed);
+}
+
+
 function clearData()
 {
 	updateCounter = 0;
 	headingVectors = new Array( headingSlots ).fill(0);
+
+	prevPosition = null;
+
+	if (testTimerId != null)
+		clearInterval(testTimerId);
 }
 
 function findNextSlot(startIndex, direction, limitCount)
@@ -113,7 +252,7 @@ function getLocation() {
 	//addSpeedAndHeading(7, 120);
 
 	if (navigator.geolocation) {
-		navigator.geolocation.watchPosition(showPosition, showError ); // , { enableHighAccuracy: true}
+		locationId = navigator.geolocation.watchPosition(showPosition, showError ); // , { enableHighAccuracy: true}
 		textElement.innerHTML = "Searching location";
 	} else { 
 		textElement.innerHTML = "Geolocation is not supported by this browser.";
@@ -248,7 +387,7 @@ function calcWindVector() {
 	var alpha = toDeg( Math.atan2(y, x) );
 	alpha = -alpha+90;
 	alpha = (alpha+360)%360;
-	console.log("Wind: " + windSpeed + " m/s " + alpha + " degrees");
+	//console.log("Wind: " + windSpeed + " m/s " + alpha + " degrees");
 
 	color = 'green';
 	drawLine(ctx, 
@@ -370,6 +509,10 @@ function showPosition(position) {
 		"<br>Heading: " + getHeading() + " degrees" + str +
 		"<br>accuracy: " + position.coords.accuracy + " m" +
 		"<br>updates: " + updateCounter;
+	if (currentTime != null) {
+		textElement.innerHTML = textElement.innerHTML + "<br>Simulation time: " + currentTime;
+	}
+
 	drawVectors();
 	calcWindVector();
 }
