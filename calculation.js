@@ -32,7 +32,7 @@ var headingVectors = null;
 var headingSteps = 10;
 var headingSlots = 360/headingSteps;
 
-var locationId;
+var locationId = null;
 
 var trackPointArray; // GPS locations for test data
 
@@ -101,8 +101,11 @@ function testDataXmlReadyHandler(xmlDoc) {
 function testInit() {
 	// remove location request
 	if (navigator.geolocation) {
+		if (locationId != null) {
 		navigator.geolocation.clearWatch(locationId);
+			locationId = null;
 		textElement.innerHTML = "Location watch stopped during test data.";
+		}
 	} else { 
 		textElement.innerHTML = "Geolocation is not supported by this browser.";
 	}
@@ -246,14 +249,11 @@ function getLocation() {
 
 	clearData();
 
-	// Test data
-	//addSpeedAndHeading(5, 30);
-	//addSpeedAndHeading(9, 195);
-	//addSpeedAndHeading(7, 120);
-
 	if (navigator.geolocation) {
-		locationId = navigator.geolocation.watchPosition(showPosition, showError, { enableHighAccuracy: true} ); // , { enableHighAccuracy: true}
+		if (locationId == null) {
+			locationId = navigator.geolocation.watchPosition(showPosition, showError, { enableHighAccuracy: true} );
 		textElement.innerHTML = "Searching location";
+		}
 	} else { 
 		textElement.innerHTML = "Geolocation is not supported by this browser.";
 	}
