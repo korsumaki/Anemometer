@@ -36,8 +36,8 @@ var locationId = null;
 
 var trackPointArray; // GPS locations for test data
 
-var testDataFilename = "testData_20190731.xml"
-var log = ""
+var testDataFilename = "testData_20190731.xml";
+var log = "";
 
 function debug_log(str)
 {
@@ -289,7 +289,7 @@ function toDeg(v) {
 }
 
 function maxValue(arr) {
-	return arr.reduce( function(total, value) { return Math.max(total, value) } )
+	return arr.reduce( function(total, value) { return Math.max(total, value); } );
 }
 
 function minValue(arr) {
@@ -301,7 +301,7 @@ function minValue(arr) {
 		else {
 			return total;
 		}
-	}, 9999 )
+	}, 9999 );
 }
 
 function drawVectors() {
@@ -333,7 +333,7 @@ function drawVectors() {
 		if ((heading/headingSteps) == Math.round(getHeading()/headingSteps) % headingSlots) { // Latest heading with different color
 			color = 'red';
 		}
-		var scaledDistance = speed*scaleFactor
+		var scaledDistance = speed*scaleFactor;
 
 		var direction = toRad(heading);
 		var x = Math.sin(direction) * scaledDistance;
@@ -540,16 +540,16 @@ function showPosition(position) {
 function showError(error) {
 	switch(error.code) {
 		case error.PERMISSION_DENIED:
-			textElement.innerHTML = "User denied the request for Geolocation."
+			textElement.innerHTML = "User denied the request for Geolocation.";
 			break;
 		case error.POSITION_UNAVAILABLE:
-			textElement.innerHTML = "Location information is unavailable."
+			textElement.innerHTML = "Location information is unavailable.";
 			break;
 		case error.TIMEOUT:
-			textElement.innerHTML = "The request to get user location timed out."
+			textElement.innerHTML = "The request to get user location timed out.";
 			break;
 		case error.UNKNOWN_ERROR:
-			textElement.innerHTML = "An unknown error occurred."
+			textElement.innerHTML = "An unknown error occurred.";
 			break;
 	}
 }
