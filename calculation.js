@@ -252,7 +252,7 @@ function getLocation() {
 	//addSpeedAndHeading(7, 120);
 
 	if (navigator.geolocation) {
-		locationId = navigator.geolocation.watchPosition(showPosition, showError ); // , { enableHighAccuracy: true}
+		locationId = navigator.geolocation.watchPosition(showPosition, showError, { enableHighAccuracy: true} ); // , { enableHighAccuracy: true}
 		textElement.innerHTML = "Searching location";
 	} else { 
 		textElement.innerHTML = "Geolocation is not supported by this browser.";
