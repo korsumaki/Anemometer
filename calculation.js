@@ -6,7 +6,7 @@
  * + laske nopeusvektoreiden summavektori
  *   + samalla piirtofunktiossa?
  * - moderni ui, skaalaa canvas ruudun levyiseksi?
- * - käännä tuulen suunta 180.
+ * + käännä tuulen suunta 180.
  * /- sovita ympyrä dataan
  *   - halkaisija on (max+min)/2
  *   - vajaalla datalla halkaisija voi olla jotain muutakin. Voiko sen laskea?
@@ -309,7 +309,7 @@ function drawVectors() {
 	var ctx = c.getContext("2d");
 
 	var centerX = c.width/2;
-	var centerY = c.height/2;
+	var centerY = centerX; // Use width to get nice centering with room for numers at the bottom.
 
 	// Clear screen
 	ctx.clearRect(0, 0, c.width, c.height);
@@ -363,7 +363,7 @@ function calcWindVector() {
 	var ctx = c.getContext("2d");
 
 	var centerX = c.width/2;
-	var centerY = c.height/2;
+	var centerY = centerX; // Use width to get nice centering with room for numers at the bottom.
 
 	// Find highest and lowest speed vectors -> draw circles for those
 	var highest = maxValue(headingVectors);
@@ -396,12 +396,21 @@ function calcWindVector() {
 		centerY - y* scaleFactor/(headingSlots/(2*4)),		// *4 is to get wind vector scaled up 4 times
 		color, 5 );
 
-	var knots = windSpeed/1852*3600;
+	var windSpeedKnots = windSpeed/1852*3600;
 	// Write also numbers to canvas
+	// Wind
 	var degreesStr = addPrefixDigits("" + Math.round(alpha), "0", 3);
-	var text = Math.round(windSpeed*10)/10 + " m/s " + Math.round(knots*10)/10 + " kn " + degreesStr + " deg";
+	var text = "Wind: " + Math.round(windSpeedKnots*10)/10 + " kn " + degreesStr + " deg (" + Math.round(windSpeed*10)/10 + " m/s)";
 	ctx.font = "20px Arial";
-	ctx.fillText(text, 3, c.height-3);
+	ctx.fillText(text, 3, c.height-30);
+
+	// Current speed
+	var latestSpeed = getSpeed();
+	var speedKnots = latestSpeed/1852*3600;
+	var speedKmh = latestSpeed*3.6;
+	var degreesStr = addPrefixDigits("" + Math.round(getHeading()), "0", 3);
+	var text = "Speed: " + Math.round(speedKmh) + " km/h " + degreesStr + " deg (" + Math.round(speedKnots) + " kn)";
+	ctx.fillText(text, 3, c.height-5);
 }
 
 
